@@ -1,18 +1,12 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
-
 #include <string>
 #include "Item.h"
 using namespace std;
 
-
-// =====================================================================
-// MEMBER 1: SEARCH & HASH TABLE SPECIALIST (DSA TRACK)
-// Responsibilities: O(1) custom Hash Map using dynamic arrays & chaining.
-// =====================================================================
 class HashTable {
 private:
-    // Chaining method for collision resolution[cite: 1]
+    // Chaining method for collision resolution
     struct Node { 
         string key; 
         Item* value; 
@@ -36,7 +30,7 @@ public:
     }
 
     ~HashTable() {
-        // Memory Safety: Prevent memory leaks on teardown[cite: 1]
+        // Memory Safety: Prevent memory leaks 
         for(int i = 0; i < capacity; i++) {
             Node* current = table[i];
             while (current != nullptr) {
@@ -48,7 +42,7 @@ public:
         delete[] table;
     }
 
-    // $O(1)$ Average Insertion
+    // O(1) Average Insertion
     void insert(const string& key, Item* item) {
         int index = hashFunction(key);
         Node* newNode = new Node(key, item);
@@ -56,7 +50,7 @@ public:
         table[index] = newNode;
     }
 
-    // $O(1)$ Average Search[cite: 1]
+    // O(1) Average Search[cite: 1]
     Item* search(const string& key) {
         int index = hashFunction(key);
         Node* current = table[index];
