@@ -7,15 +7,12 @@
 
 using namespace std;
 
-struct Order {
-    string sku;
-    int requestedQty;
-};
-
 struct OrderNode {
-    Order data;
+    string sku;
+    int quantity;
     OrderNode* next;
-    OrderNode(Order o) : data(o), next(nullptr) {}
+
+    OrderNode(string s, int q) : sku(s), quantity(q), next(nullptr) {}
 };
 
 class OrderQueue {
@@ -27,11 +24,15 @@ public:
     OrderQueue() : frontNode(nullptr), rearNode(nullptr) {}
 
     ~OrderQueue() {
-        while (hasOrders()) dequeueOrder();
+        string s;
+        int q;
+        while (!isEmpty()) {
+            dequeue(s, q);
+        }
     }
 
-    void enqueueOrder(string sku, int qty) {
-        OrderNode* newNode = new OrderNode({sku, qty});
+    void enqueue(string sku, int qty) {
+        OrderNode* newNode = new OrderNode(sku, qty);
         if (rearNode == nullptr) {
             frontNode = rearNode = newNode;
             return;
@@ -40,33 +41,21 @@ public:
         rearNode = newNode;
     }
 
-    bool hasOrders() { return frontNode != nullptr; }
-
-    Order dequeueOrder() {
-        if (frontNode == nullptr) return {"", 0};
+    bool dequeue(string& sku, int& qty) {
+        if (isEmpty()) return false;
         OrderNode* temp = frontNode;
-        Order data = temp->data;
+        sku = temp->sku;
+        qty = temp->quantity;
         frontNode = frontNode->next;
-        if (frontNode == nullptr) rearNode = nullptr;
+        if (frontNode == nullptr) {
+            rearNode = nullptr;
+        }
         delete temp;
-        return data;
+        return true;
     }
 
-    void displayPendingOrders() {
-        if (!hasOrders()) {
-            cout << "[Info] No pending orders in the queue." << endl;
-            return;
-        }
-        cout << "\n===== PENDING ORDERS (FIFO Queue) =====" << endl;
-        OrderNode* current = frontNode;
-        int position = 1;
-        while (current != nullptr) {
-            cout << "  " << position << ". SKU: " << current->data.sku
-                 << " | Qty Requested: " << current->data.requestedQty << endl;
-            current = current->next;
-            position++;
-        }
-        cout << "=======================================\n" << endl;
+    bool isEmpty() const {
+        return frontNode == nullptr;
     }
 };
 
