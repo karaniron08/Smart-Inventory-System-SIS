@@ -134,7 +134,7 @@ int main() {
         case 4: {
             string sku = readLine("Enter SKU for order: ");
             int qty = readInt("Enter quantity: ");
-            manager.queueCustomerOrder(sku, qty);
+            manager.queueOrder(sku, qty);
             break;
         }
 
