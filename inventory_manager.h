@@ -11,7 +11,6 @@
 #include "OrderQueue.h"
 #include "FileManager.h"
 
-
 using namespace std;
 
 class InventoryManager {
@@ -21,7 +20,6 @@ private:
     OrderQueue orderQueue;
     UndoStack undoStack;
 
-    
     static const int GRID_ROWS = 8;
     static const int GRID_COLS = 8;
 
@@ -35,45 +33,55 @@ public:
              << " (" << item->getName() << ")" << endl;
     }
 
-    void queueCustomerOrder(string sku, int qty) {
-        orderQueue.enqueueOrder(sku, qty);
+    void queueOrder(string sku, int qty) {
+        Item* item = inventoryMap.search(sku);
+        if (item == nullptr) {
+            cout << "[Error] Item with SKU '" << sku << "' not found." << endl;
+            return;
+        }
+        orderQueue.enqueue(sku, qty);
         cout << "[OK] Order queued -> SKU: " << sku << ", Qty: " << qty << endl;
     }
 
+    void queueCustomerOrder(string sku, int qty) {
+        queueOrder(sku, qty);
+    }
+
     void processPendingOrders() {
-        if (!orderQueue.hasOrders()) {
+        if (orderQueue.isEmpty()) {
             cout << "[Info] No pending orders to process." << endl;
             return;
         }
         cout << "\n--- Processing Pending Orders ---" << endl;
-        while (orderQueue.hasOrders()) {
-            Order order = orderQueue.dequeueOrder();
-            Item* item = inventoryMap.search(order.sku);
+        while (!orderQueue.isEmpty()) {
+            string sku;
+            int qty = 0;
+            orderQueue.dequeue(sku, qty);
+            Item* item = inventoryMap.search(sku);
             if (item == nullptr) {
-                cout << "[Error] SKU " << order.sku << " not found in inventory." << endl;
+                cout << "[Error] SKU " << sku << " not found in inventory." << endl;
                 continue;
             }
-            if (item->getQuantity() < order.requestedQty) {
-                cout << "[Error] Insufficient stock for " << order.sku
+            if (item->getQuantity() < qty) {
+                cout << "[Error] Insufficient stock for " << sku
                      << " (Have: " << item->getQuantity()
-                     << ", Need: " << order.requestedQty << ")" << endl;
+                     << ", Need: " << qty << ")" << endl;
                 continue;
             }
-            item->updateQuantity(-order.requestedQty);
-            undoStack.push(order.sku, -order.requestedQty, "ORDER_SOLD");
-            FileManager::saveTransaction(order.sku, order.requestedQty);
+            item->updateQuantity(-qty);
+            undoStack.push(sku, -qty, "ORDER_SOLD");
+            FileManager::saveTransaction(sku, qty);
             restockHeap.updateItem(item);
-            cout << "[OK] Sold " << order.requestedQty << " x " << item->getName()
-                 << " | Remaining: " << item->getQuantity() << endl;
             if (item->needsRestock()) {
+                restockHeap.insert(item);
                 cout << "  [!] RESTOCK ALERT: " << item->getName()
                      << " is below threshold!" << endl;
             }
+            cout << "[OK] Sold " << qty << " x " << item->getName()
+                 << " | Remaining: " << item->getQuantity() << endl;
         }
         cout << "---------------------------------\n" << endl;
     }
-
-    
 
     void searchAndDisplayItem(string sku) {
         Item* item = inventoryMap.search(sku);
@@ -131,6 +139,7 @@ public:
     void displayLowStockAlerts() {
         restockHeap.displayRestockAlerts();
     }
+
     void findOptimalPickingRoute(int targetRow, int targetCol) {
         if (targetRow < 0 || targetRow >= GRID_ROWS ||
             targetCol < 0 || targetCol >= GRID_COLS) {
@@ -159,7 +168,6 @@ public:
         int* queueC = new int[maxQueueSize];
         int front = 0, rear = 0;
 
-        
         visited[0][0] = true;
         queueR[rear] = 0;
         queueC[rear] = 0;
@@ -228,7 +236,6 @@ public:
         cout << "========================================\n" << endl;
     }
 
-    
     void saveSystemState() {
         Item* items[1000];
         int count = inventoryMap.getAllItems(items, 1000);
@@ -264,7 +271,6 @@ public:
         cout << "[OK] Inventory saved to inventory_data.csv (" << count << " items)." << endl;
     }
 
-    
     void loadSystemState() {
         const int MAX_ITEMS = 500;
         string types[MAX_ITEMS], skus[MAX_ITEMS], names[MAX_ITEMS], extras[MAX_ITEMS];
@@ -284,7 +290,6 @@ public:
                 item = new PerishableItem(skus[i], names[i], quantities[i],
                                           prices[i], extras[i]);
             } else if (types[i] == "Electronic") {
-                
                 int warranty = 0;
                 for (int j = 0; j < (int)extras[i].length(); j++) {
                     if (extras[i][j] >= '0' && extras[i][j] <= '9')
@@ -300,7 +305,6 @@ public:
         cout << "[OK] Loaded " << count << " items from inventory_data.csv." << endl;
     }
 
-    
     HashTable& getInventoryMap() { return inventoryMap; }
 };
 
